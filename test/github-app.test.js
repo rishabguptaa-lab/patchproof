@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createHmac} from 'node:crypto';import {verifyWebhook} from '../app/github.js';
+test('verifies webhook HMAC without timing-unsafe comparison',()=>{const secret='test-secret',body=Buffer.from('{"ok":true}');const signature=`sha256=${createHmac('sha256',secret).update(body).digest('hex')}`;assert.equal(verifyWebhook(secret,body,signature),true);assert.equal(verifyWebhook(secret,body,'sha256=bad'),false);});

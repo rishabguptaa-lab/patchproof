@@ -2,7 +2,7 @@
 
 **The AI-era PR security gate with explicit evidence levels.**
 
-PatchProof verifies npm and PyPI dependency truth, reconciles JavaScript and Python imports with project manifests, detects high-impact insecure patterns, emits GitHub-native SARIF, and can execute opt-in vulnerability proofs inside a locked-down container.
+PatchProof verifies npm, PyPI, Go, and Maven dependency truth; reconciles imports and installed APIs; analyzes changed authorization boundaries; emits GitHub-native SARIF; and can execute opt-in vulnerability proofs inside a locked-down container. A deployable GitHub App posts inline reviews using repository or organization policy.
 
 **Precision:** PatchProof does not generate exploits. `execution_verified` appears only when a proof supplied and trusted by the repository owner is executed and meets its declared expectation; ordinary scanner findings remain `pattern_match`, `manifest_verified`, or `registry_verified`.
 
@@ -140,13 +140,34 @@ patchproof scan . --format terminal
 patchproof scan . --format json --output patchproof.json
 patchproof scan . --format sarif --output patchproof.sarif
 patchproof scan . --offline
+patchproof scan . --base origin/main --diff-only
+patchproof snapshot .
 ```
 
 Exit code `0` means the policy/proofs passed, `1` means a policy or proof expectation failed, and `2` means execution could not complete safely.
 
 ## Benchmark honesty
 
-`npm run benchmark` is a transparent **synthetic rule-regression corpus**. It protects detector behavior but is not presented as proof of real-world effectiveness. A separate real-AI-output benchmark requires human-labeled Copilot, Cursor and other coding-agent samples and will publish provenance, labels, false positives and per-rule recall when sufficient data exists.
+`npm run benchmark` remains a transparent **synthetic rule-regression corpus**. PatchProof now also ships a provenance-preserving human-label schema requiring two reviewers, source commit/path, license, AI-assistance confidence, disclosure state, and snippet hash. Run `npm run benchmark:human -- labels.jsonl predictions.jsonl` to calculate precision, recall, F1, exclusions, and reviewer disagreements. The example dataset is deliberately not presented as real-world validation.
+
+Corpus collection is governed by the locked [benchmark preregistration](docs/BENCHMARK_PREREGISTRATION.md) and [responsible disclosure protocol](docs/DISCLOSURE.md): deterministic sampling, blinded independent labels, Cohen's kappa plus raw agreement, separate natural/seeded recall, predefined headline thresholds, private disclosure, and consent before naming.
+
+## Supply-chain and API truth
+
+- Validates integrity fields across npm lockfile entries.
+- Compares installed package versions with the lockfile.
+- Creates a reviewed publisher/maintainer baseline with `patchproof snapshot .`.
+- Flags registry publisher or maintainer changes against that baseline.
+- Reconciles named JavaScript imports with installed TypeScript declarations when available.
+- Checks PyPI, Go proxy, and Maven Central project existence.
+
+## Diff-aware authorization analysis
+
+Use `--base` with `--diff-only` to gate only added lines. PatchProof identifies changed routes without visible authorization controls and short-window flows from request input to command, SQL, and filesystem sinks. These heuristic findings use `diff_verified`; they do not claim whole-program dataflow proof.
+
+## GitHub App
+
+The App validates webhook HMACs, uses short-lived installation tokens, downloads only changed files plus dependency manifests, posts comments only on added diff lines, and supports a protected organization policy repository. See [GitHub App deployment](docs/GITHUB_APP.md).
 
 Run all local checks with `npm run check`.
 
@@ -159,14 +180,16 @@ Run all local checks with `npm run check`.
 - Executable proofs require an explicit command and Docker sandbox.
 - A successful scan is not a guarantee that software is secure.
 
-## Roadmap
+## Completed v2 roadmap
 
-- Human-labeled AI-generated-code benchmark
-- Lockfile publisher, integrity and maintainer-change verification
-- Installed-version export/API truth verification
-- Diff-aware dataflow and authorization-boundary analysis
-- Python framework-specific authorization rules
-- Go and Java dependency adapters
-- GitHub App with inline comments and organization policy management
+- Human-label benchmark schema and evaluator
+- Lockfile integrity, publisher, maintainer-change, and installed-version checks
+- Installed TypeScript declaration/API truth verification
+- Diff-scoped local dataflow and authorization-boundary analysis
+- Django REST Framework, Django CSRF, Flask, and FastAPI authorization rules
+- Go module/import and Maven/Gradle coordinate adapters
+- GitHub App with inline comments and organization policy fallback
+
+Known limits remain explicit: the benchmark still needs real labeled cases; API truth currently requires installed declarations; diff dataflow is local rather than interprocedural; registry outages are non-blocking; and the GitHub App must be deployed and registered by its operator.
 
 Apache-2.0 · [Threat model](THREAT_MODEL.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)

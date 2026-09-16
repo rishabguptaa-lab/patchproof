@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://patchproof.dev/benchmark-case/v1",
+  "title": "PatchProof human-labeled benchmark case",
+  "type": "object",
+  "required": ["id", "source", "language", "label", "provenance", "reviewers"],
+  "properties": {
+    "id": {"type": "string"},
+    "source": {"type": "object", "required": ["repository", "commit", "path"], "properties": {"repository":{"type":"string"},"commit":{"type":"string"},"path":{"type":"string"},"pullRequest":{"type":["integer","null"]}}},
+    "language": {"enum": ["javascript", "typescript", "python", "go", "java"]},
+    "aiAssistance": {"enum": ["confirmed", "self-reported", "suspected", "unknown"]},
+    "label": {"enum": ["vulnerable", "safe", "uncertain"]},
+    "ruleId": {"type": ["string", "null"]},
+    "provenance": {"type": "object", "required": ["license", "collectedAt"], "properties": {"license":{"type":"string"},"collectedAt":{"type":"string","format":"date-time"},"disclosureStatus":{"enum":["not-required","private","remediated","embargoed"]}}},
+    "reviewers": {"type":"array","minItems":2,"items":{"type":"object","required":["id","decision"],"properties":{"id":{"type":"string"},"decision":{"enum":["vulnerable","safe","uncertain"]},"notes":{"type":"string"}}}},
+    "snippetSha256": {"type":"string","pattern":"^[a-f0-9]{64}$"}
+  }
+}

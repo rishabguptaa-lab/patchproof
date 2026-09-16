@@ -10,6 +10,10 @@ const PY_RULES = [
   ['python-debug-mode','high','CWE-489','Production debug mode enabled',/(?:app\.run\([^\n]*debug\s*=\s*True|DEBUG\s*=\s*True)/g,'Debug mode can expose an interactive debugger or sensitive internals.','Disable debug mode outside local development.'],
   ['python-sql-injection','critical','CWE-89','Python SQL interpolation',/\.execute\s*\(\s*(?:f["']|["'][^"']*%|["'][^"']*\.format\()/g,'A SQL statement is constructed through string interpolation.','Use database parameter placeholders and a separate parameter tuple.'],
   ['python-weak-hash','medium','CWE-328','Weak password hashing primitive',/hashlib\.(?:md5|sha1)\s*\([^\n]*(?:password|passwd|secret|token)/gi,'MD5 or SHA-1 is used in a security-sensitive context.','Use Argon2id, scrypt, or bcrypt for passwords.']
+  ,['django-allow-any','high','CWE-862','Django REST Framework allows anonymous access',/permission_classes\s*=\s*\[[^\]]*AllowAny[^\]]*\]/g,'A DRF view explicitly allows unrestricted access.','Use IsAuthenticated plus object-level permission checks.']
+  ,['django-csrf-exempt','high','CWE-352','Django CSRF protection disabled',/@csrf_exempt/g,'A Django endpoint disables CSRF protection.','Remove csrf_exempt or implement an equivalent authenticated anti-CSRF control.']
+  ,['fastapi-missing-auth','high','CWE-862','FastAPI route lacks an authorization dependency',/@(?:app|router)\.(?:post|put|patch|delete)\([^\n]*\)\s*\n(?:async\s+)?def\s+\w+\([^)]*\)(?![^:]*Depends\()/g,'A state-changing FastAPI route has no visible Depends-based authorization.','Add a verified identity dependency and resource-level authorization.']
+  ,['flask-missing-auth','high','CWE-862','Flask state-changing route lacks login guard',/@(?:app|blueprint)\.route\([^\n]*methods\s*=\s*\[[^\]]*(?:POST|PUT|PATCH|DELETE)[^\]]*\][^\n]*\)\s*\n(?!\s*@(?:login_required|permission_required))/gi,'A state-changing Flask route has no adjacent login/permission decorator.','Add login_required and explicit resource authorization.']
 ];
 
 export async function analyzePython(root, files, {network=true}={}) {

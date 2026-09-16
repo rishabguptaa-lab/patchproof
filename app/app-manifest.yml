@@ -1,0 +1,12 @@
+name: PatchProof
+url: https://github.com/rishabguptaa-lab/patchproof
+hook_attributes:
+  active: true
+redirect_url: https://example.invalid/github/callback
+public: true
+default_permissions:
+  contents: read
+  pull_requests: write
+  metadata: read
+default_events:
+  - pull_request

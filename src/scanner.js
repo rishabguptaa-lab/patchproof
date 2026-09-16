@@ -3,6 +3,9 @@ import path from 'node:path';
 import { RULES, SEVERITY_SCORE } from './rules.js';
 import { verifyDependencies, verifyImports } from './truth.js';
 import { analyzePython } from './python.js';
+import { analyzeSupplyChain } from './supply-chain.js';
+import { analyzeAuthorizationBoundaries, changedLines, isChanged } from './diff-analysis.js';
+import { analyzeGoJava } from './go-java.js';
 
 const SOURCE_EXTENSIONS = new Set(['.js','.mjs','.cjs','.ts','.tsx','.jsx','.json','.yml','.yaml','.env','.py','.go','.java','.rb','.php']);
 const IGNORED = new Set(['.git','node_modules','dist','build','coverage','.next','vendor']);
@@ -11,6 +14,7 @@ export async function scanRepository(root, options = {}) {
   const startedAt = new Date().toISOString();
   const files = await collect(root);
   const eligibleFiles = files.filter(file => !options.policy?.isExcluded(path.relative(root, file).split(path.sep).join('/')));
+  const changeMap=await changedLines(root,options.base);
   const findings = [];
   for (const file of eligibleFiles) {
     const relative = path.relative(root, file).split(path.sep).join('/');
@@ -25,14 +29,18 @@ export async function scanRepository(root, options = {}) {
   findings.push(...await verifyDependencies(root, { network: options.network }));
   findings.push(...await verifyImports(root, eligibleFiles));
   findings.push(...await analyzePython(root, eligibleFiles, { network: options.network }));
-  const unique = deduplicate(findings).sort((a,b) => SEVERITY_SCORE[b.severity]-SEVERITY_SCORE[a.severity] || a.file.localeCompare(b.file));
+  findings.push(...await analyzeSupplyChain(root, eligibleFiles, { network: options.network }));
+  findings.push(...await analyzeGoJava(root, eligibleFiles, { network: options.network }));
+  findings.push(...await analyzeAuthorizationBoundaries(root, eligibleFiles, changeMap));
+  const scoped=options.diffOnly&&changeMap?findings.filter(f=>['package-lock.json','go.mod','pom.xml','build.gradle','build.gradle.kts'].includes(f.file)||isChanged(changeMap,f.file,f.line)):findings;
+  const unique = deduplicate(scoped).sort((a,b) => SEVERITY_SCORE[b.severity]-SEVERITY_SCORE[a.severity] || a.file.localeCompare(b.file));
   const threshold = options.policy?.failOn || 'high';
   const blocking = unique.filter(x => SEVERITY_SCORE[x.severity] >= SEVERITY_SCORE[threshold]);
   return {
-    schema:'https://patchproof.dev/report/v1', version:'1.1.0', root, startedAt, completedAt:new Date().toISOString(),
+    schema:'https://patchproof.dev/report/v1', version:'2.0.0', root, startedAt, completedAt:new Date().toISOString(),
     summary: count(unique, eligibleFiles.length), findings:unique,
     gate:{ passed:blocking.length===0, threshold, blockingFindings:blocking.length },
-    integrity:{ engine:'deterministic', evidenceRequired:true, networkChecks:options.network !== false }
+    integrity:{ engine:'deterministic', evidenceRequired:true, networkChecks:options.network !== false, diffBase:options.base||null, diffScoped:Boolean(options.diffOnly&&changeMap) }
   };
 }
 
