@@ -11,8 +11,8 @@ try{
   let proofResult=null; if(process.env.INPUT_PROOF_MANIFEST){
     const event=await githubEvent();
     if(event?.pull_request?.head?.repo?.fork) throw new Error('PatchProof refuses proof execution from fork pull requests. Run trusted proofs in a separately reviewed workflow after checkout.');
-    if(process.env.GITHUB_EVENT_NAME==='pull_request'&&!process.env.INPUT_PROOF_MANIFEST_SHA256) throw new Error('Pull-request proof execution requires proof_manifest_sha256 pinned in the workflow.');
-    proofResult=await runProofManifest(root,process.env.INPUT_PROOF_MANIFEST,{expectedSha256:process.env.INPUT_PROOF_MANIFEST_SHA256||undefined});
+    if(process.env.GITHUB_EVENT_NAME==='pull_request'&&!process.env.INPUT_PROOF_BUNDLE_SHA256) throw new Error('Pull-request proof execution requires proof_bundle_sha256 pinned in the workflow.');
+    proofResult=await runProofManifest(root,process.env.INPUT_PROOF_MANIFEST,{expectedBundleSha256:process.env.INPUT_PROOF_BUNDLE_SHA256||undefined});
   }
   const output=path.join(root,'patchproof.sarif'); await fs.writeFile(output,JSON.stringify(toSarif(report),null,2));
   if(process.env.GITHUB_OUTPUT)await fs.appendFile(process.env.GITHUB_OUTPUT,`passed=${report.gate.passed}\nfindings=${report.summary.totalFindings}\nsarif=${output}\nproof_report=${proofResult?.output||''}\n`);

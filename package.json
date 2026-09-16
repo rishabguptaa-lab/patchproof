@@ -9,7 +9,7 @@
     "test": "node --test",
     "benchmark": "node benchmark/run.js",
     "demo": "node bin/patchproof.js scan examples/vulnerable --format terminal",
-    "verify:demo": "node bin/patchproof.js verify . --manifest .patchproof/proofs.json --manifest-sha256 4519589b856c4b1cf7fb62fe6f4fea28c6905b36289a4be8d921cca1e42e2111",
+    "verify:demo": "node bin/patchproof.js verify . --manifest .patchproof/proofs.json --bundle-sha256 73705aad15bde288f39aa91f9df7b7f6012371766a3372c88b642e855cd30679",
     "check": "node --check src/*.js && node --check bin/patchproof.js && npm test && npm run benchmark && node bin/patchproof.js scan . --offline"
   },
   "engines": { "node": ">=20" },

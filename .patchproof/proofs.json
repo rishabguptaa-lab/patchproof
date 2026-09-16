@@ -1,5 +1,9 @@
 {
   "version": 1,
+  "files": [
+    "examples/proof-target/command.js",
+    "examples/proof-target/command-injection.proof.mjs"
+  ],
   "proofs": [
     {
       "id": "demo-command-injection",

@@ -6,7 +6,7 @@ PatchProof **does not generate exploits**. It executes proofs supplied by reposi
 
 - The host runner, GitHub token, organization secrets, caches, and adjacent workloads must remain protected.
 - Pull-request source, proof scripts, proof manifests, expected output strings, dependencies, and build tools are untrusted.
-- A reviewed base-branch workflow and a pinned manifest SHA-256 are trust anchors.
+- A reviewed base-branch workflow and a pinned proof-bundle SHA-256 are trust anchors. The bundle covers the manifest plus every file declared in its `files` array.
 - Docker is a security boundary with known limitations, not a perfect virtual-machine boundary.
 
 ## Malicious-manifest attacks
@@ -23,7 +23,7 @@ An attacker may attempt to:
 
 ## Enforced controls
 
-- Proof manifests can be pinned by SHA-256; pull-request execution requires the pin.
+- The proof bundle can be pinned by SHA-256; pull-request execution requires the pin. Changing the manifest or any declared proof script/helper invalidates it.
 - Fork pull-request proof manifests are refused by the GitHub Action.
 - The container receives no inherited environment except its image defaults.
 - Networking is disabled.
@@ -36,6 +36,7 @@ An attacker may attempt to:
 ## Residual risks
 
 - A proof can intentionally print the expected marker. Human review of proof logic remains required.
+- Dynamically loaded or transitive proof code omitted from the manifest's `files` array is outside the pin. Reviewers must require the complete executable/import closure to be declared.
 - Same-kernel container isolation cannot eliminate kernel/container-runtime escape risk.
 - A vulnerable language runtime or pre-approved image can expand the attack surface.
 - A proof can read all source mounted into `/workspace`.
@@ -45,7 +46,7 @@ An attacker may attempt to:
 
 ### Trusted branches
 
-Run proofs after the manifest and scripts are reviewed. Pin the exact manifest hash in the workflow and keep workflow changes behind CODEOWNERS and branch protection.
+Run proofs after the manifest and scripts are reviewed. List every executable and imported proof file, pin the resulting bundle hash in the workflow, and keep workflow changes behind CODEOWNERS and branch protection.
 
 ### External forks
 

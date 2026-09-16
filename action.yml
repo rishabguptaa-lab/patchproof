@@ -13,8 +13,8 @@ inputs:
     description: Optional path to a v1 proof manifest. Proofs run in a locked-down Docker container.
     required: false
     default: ""
-  proof_manifest_sha256:
-    description: Expected SHA-256 of the trusted proof manifest; required when proofs run on pull requests
+  proof_bundle_sha256:
+    description: Expected SHA-256 of the manifest and every declared proof file; required for pull-request proofs
     required: false
     default: ""
 outputs:

@@ -66,6 +66,7 @@ Create `.patchproof/proofs.json`:
 ```json
 {
   "version": 1,
+  "files": ["security/proofs/command-injection.mjs"],
   "proofs": [{
     "id": "command-injection-regression",
     "ruleId": "command-injection",
@@ -88,10 +89,10 @@ To enable proofs in a pull-request GitHub Action, explicitly set the trusted man
 - uses: rishabguptaa-lab/patchproof@v1
   with:
     proof_manifest: .patchproof/proofs.json
-    proof_manifest_sha256: 4519589b856c4b1cf7fb62fe6f4fea28c6905b36289a4be8d921cca1e42e2111
+    proof_bundle_sha256: 73705aad15bde288f39aa91f9df7b7f6012371766a3372c88b642e855cd30679
 ```
 
-Calculate the pin with `sha256sum .patchproof/proofs.json` and update it only after reviewing manifest changes.
+Declare every proof script and imported helper in the manifest's `files` array. Calculate the complete pin with `patchproof hash-proofs .` and update it only after reviewing changes to the manifest and every declared file.
 
 The Action refuses fork-provided proofs. A matching output string alone cannot establish that a proof is honest, so proof logic remains a reviewed trust anchor. Read the full [malicious-manifest threat model](THREAT_MODEL.md) before enabling executable proofs.
 

@@ -10,11 +10,22 @@ export async function runProofManifest(root, manifestPath='.patchproof/proofs.js
   const manifestSha256=createHash('sha256').update(raw).digest('hex');
   if(options.expectedSha256&&manifestSha256!==options.expectedSha256)throw new Error(`Proof manifest integrity check failed. Expected ${options.expectedSha256}, received ${manifestSha256}.`);
   const manifest=JSON.parse(raw);
+  const bundle=await proofBundle(root,manifestPath,raw,manifest);
+  if(options.expectedBundleSha256&&bundle.sha256!==options.expectedBundleSha256)throw new Error(`Proof bundle integrity check failed. Expected ${options.expectedBundleSha256}, received ${bundle.sha256}.`);
   if(manifest.version!==1||!Array.isArray(manifest.proofs))throw new Error('Proof manifest must use version 1 and contain a proofs array.');
   await ensureDocker(); const results=[];
   for(const proof of manifest.proofs){validateProof(proof);results.push(await runOne(root,proof));}
-  const report={schema:'https://patchproof.dev/proof-report/v1',createdAt:new Date().toISOString(),manifest:{path:manifestPath,sha256:manifestSha256,trust:'author_supplied'},sandbox:{runtime:'docker',network:'none',rootFilesystem:'read-only',capabilities:'dropped',privileges:'no-new-privileges'},summary:{total:results.length,verified:results.filter(x=>x.verification.level==='execution_verified').length,failed:results.filter(x=>x.verification.level!=='execution_verified').length},results};
+  const report={schema:'https://patchproof.dev/proof-report/v1',createdAt:new Date().toISOString(),manifest:{path:manifestPath,sha256:manifestSha256,trust:'author_supplied'},bundle,sandbox:{runtime:'docker',network:'none',rootFilesystem:'read-only',capabilities:'dropped',privileges:'no-new-privileges'},summary:{total:results.length,verified:results.filter(x=>x.verification.level==='execution_verified').length,failed:results.filter(x=>x.verification.level!=='execution_verified').length},results};
   const outputDir=path.join(root,'.patchproof','artifacts');await fs.mkdir(outputDir,{recursive:true});const output=path.join(outputDir,'proof-report.json');await fs.writeFile(output,JSON.stringify(report,null,2));return{report,output};
+}
+export async function inspectProofBundle(root,manifestPath='.patchproof/proofs.json'){
+  const raw=await fs.readFile(path.resolve(root,manifestPath),'utf8');const manifest=JSON.parse(raw);return proofBundle(root,manifestPath,raw,manifest);
+}
+async function proofBundle(root,manifestPath,raw,manifest){
+  if(!Array.isArray(manifest.files)||!manifest.files.length)throw new Error('Proof manifest must declare every executable/imported proof file in a non-empty files array.');
+  const unique=[...new Set(manifest.files)].sort();const hash=createHash('sha256');hash.update(`manifest:${manifestPath}\0`);hash.update(raw);hash.update('\0');
+  for(const declared of unique){if(typeof declared!=='string'||!declared||path.isAbsolute(declared))throw new Error('Proof file paths must be non-empty relative paths.');const absolute=path.resolve(root,declared);const relative=path.relative(root,absolute);if(relative.startsWith('..')||path.isAbsolute(relative))throw new Error(`Proof file escapes repository root: ${declared}`);const stat=await fs.lstat(absolute);if(!stat.isFile()||stat.isSymbolicLink())throw new Error(`Proof file must be a regular non-symlink file: ${declared}`);const content=await fs.readFile(absolute);hash.update(`file:${declared}\0`);hash.update(content);hash.update('\0');}
+  return{sha256:hash.digest('hex'),files:unique,coverage:'declared-proof-files'};
 }
 async function runOne(root,proof){
   const started=Date.now();const timeout=Math.min(Math.max(proof.timeoutMs||10000,1000),30000);
