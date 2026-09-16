@@ -2,11 +2,13 @@
 
 **Catch hallucinated dependencies before they become supply-chain incidents.**
 
-PatchProof is an AI-era dependency-truth and evidence layer for pull requests. It checks whether suggested packages exist, whether imports are declared, whether installed versions expose the APIs code expects, and whether package publishers or maintainers changed unexpectedly. Every result states exactly how it was established.
+PatchProof is an AI-era dependency-truth and evidence layer for pull requests. Its primary, cross-ecosystem job is to check whether suggested npm, PyPI, Go, and Maven packages actually exist; whether imports are declared; and whether package publishers or maintainers changed unexpectedly. Every result states exactly how it was established.
 
-PatchProof does **not** claim to have invented static analysis and is not a replacement for CodeQL, Semgrep, Bandit, dependency auditing, or human review. Its focused contribution is verifying failure modes that become common when code is generated at machine speed—especially fabricated packages and APIs—while separating pattern matches from manifest, registry, installed-version, and execution-backed evidence.
+Semgrep, CodeQL, and Bandit already perform pattern-based and semantic static analysis well. PatchProof's distinct contribution is verifying whether a dependency or import claim is true at all, then grading each finding by how far it was verified: source pattern, project manifest, public registry, installed version, or isolated execution. It complements rather than replaces those analyzers, dependency auditing, and human review.
 
-Beyond that wedge, PatchProof includes supporting PR security checks, diff-aware authorization analysis, GitHub-native SARIF, opt-in executable proofs, and a deployable GitHub App. These features support the dependency-truth workflow; they are not presented as novel categories of analysis.
+Installed API truth is a narrower Node.js capability: when a package is locally installed and publishes TypeScript declarations, PatchProof checks that named imports exist in that exact installed version. It does not yet claim equivalent API-level coverage across Python, Go, or Java.
+
+The remaining checks—framework authorization rules, diff-scoped local dataflow, GitHub-native SARIF, and opt-in executable proofs—act as surrounding guardrails for mistakes commonly introduced in AI-assisted PRs. They support the dependency-truth workflow and are not presented as new categories of static analysis.
 
 **Precision:** PatchProof does not generate exploits. `execution_verified` appears only when a proof supplied and trusted by the repository owner is executed and meets its declared expectation; ordinary scanner findings remain `pattern_match`, `manifest_verified`, or `registry_verified`.
 
