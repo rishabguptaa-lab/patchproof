@@ -1,0 +1,16 @@
+name: PatchProof
+on:
+  pull_request:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  security-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: patchproof.sarif

@@ -1,0 +1,21 @@
+name: PatchProof Security Gate
+description: Evidence-first security analysis for AI-era pull requests
+author: PatchProof
+branding:
+  icon: shield
+  color: purple
+inputs:
+  offline:
+    description: Disable registry verification
+    required: false
+    default: "false"
+outputs:
+  passed:
+    description: Whether the configured security policy passed
+  findings:
+    description: Total number of findings
+  sarif:
+    description: Path to the SARIF report
+runs:
+  using: node20
+  main: src/action.js

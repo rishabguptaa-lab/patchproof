@@ -1,0 +1,19 @@
+{
+  "name": "patchproof",
+  "version": "1.0.0",
+  "description": "Evidence-first security gate for AI-era pull requests",
+  "type": "module",
+  "bin": { "patchproof": "./bin/patchproof.js" },
+  "scripts": {
+    "scan": "node bin/patchproof.js scan .",
+    "test": "node --test",
+    "benchmark": "node benchmark/run.js",
+    "demo": "node bin/patchproof.js scan examples/vulnerable --format terminal",
+    "check": "node --check src/*.js && node --check bin/patchproof.js && npm test && npm run benchmark && node bin/patchproof.js scan . --offline"
+  },
+  "engines": { "node": ">=20" },
+  "keywords": ["security", "sast", "ai-code", "github-action", "supply-chain", "devsecops"],
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "git+https://github.com/rishabguptaa-lab/patchproof.git" },
+  "files": ["bin", "src", "action.yml", "LICENSE", "README.md"]
+}

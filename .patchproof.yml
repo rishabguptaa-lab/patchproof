@@ -1,0 +1,17 @@
+version: 1
+fail-on: high
+exclude:
+  - node_modules/**
+  - dist/**
+  - build/**
+  - coverage/**
+  - examples/vulnerable/**
+  - benchmark/**
+  - test/**
+  - src/rules.js
+rules:
+  dependency-truth: error
+  secret-exposure: error
+  command-injection: error
+  auth-bypass: error
+  unsafe-code-execution: error
