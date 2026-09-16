@@ -128,7 +128,7 @@ Common import-to-package differences such as `yaml` → `pyyaml`, `PIL` → `pil
 
 ## PatchProof and CodeQL
 
-CodeQL performs deep semantic analysis across supported languages. PatchProof focuses on AI-era failure modes: fabricated dependencies, imports missing from manifests, suspicious registry facts, explicit evidence classification, and isolated execution of repository-owned proofs. They are complementary; PatchProof exports SARIF into the same GitHub security workflow and this repository runs both.
+CodeQL performs deep semantic analysis across supported languages. PatchProof's dependency-truth layer targets a specific AI-era failure mode: generated code asserting that packages, imports, publishers, or APIs are real when they are not. Its evidence tiers, general-purpose security checks, and isolated execution of repository-owned proofs are supporting verification machinery, not AI-authorship detectors. The tools are complementary; PatchProof exports SARIF into the same GitHub security workflow and this repository runs both.
 
 ## Policy
 
