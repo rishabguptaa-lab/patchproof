@@ -94,6 +94,8 @@ To enable proofs in a pull-request GitHub Action, explicitly set the trusted man
 
 Declare every proof script and imported helper in the manifest's `files` array. Calculate the complete pin with `patchproof hash-proofs .` and update it only after reviewing changes to the manifest and every declared file.
 
+`hash-proofs` fails when it detects a static local JavaScript or Python import missing from `files`. Dynamic imports cannot always be resolved safely; they produce a warning and remain a reviewer-verified limitation rather than a tool-guaranteed closure.
+
 The Action refuses fork-provided proofs. A matching output string alone cannot establish that a proof is honest, so proof logic remains a reviewed trust anchor. Read the full [malicious-manifest threat model](THREAT_MODEL.md) before enabling executable proofs.
 
 ## JavaScript and Python coverage

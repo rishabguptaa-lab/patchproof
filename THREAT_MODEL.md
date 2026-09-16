@@ -36,7 +36,7 @@ An attacker may attempt to:
 ## Residual risks
 
 - A proof can intentionally print the expected marker. Human review of proof logic remains required.
-- Dynamically loaded or transitive proof code omitted from the manifest's `files` array is outside the pin. Reviewers must require the complete executable/import closure to be declared.
+- Statically detectable local JavaScript and Python imports missing from `files` cause bundle hashing to fail. Dynamically computed imports cannot always be resolved; PatchProof warns when it detects them, but reviewers must still verify the complete executable/import closure.
 - Same-kernel container isolation cannot eliminate kernel/container-runtime escape risk.
 - A vulnerable language runtime or pre-approved image can expand the attack surface.
 - A proof can read all source mounted into `/workspace`.
