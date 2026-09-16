@@ -4,6 +4,8 @@
 
 PatchProof verifies npm and PyPI dependency truth, reconciles JavaScript and Python imports with project manifests, detects high-impact insecure patterns, emits GitHub-native SARIF, and can execute opt-in vulnerability proofs inside a locked-down container.
 
+**Precision:** PatchProof does not generate exploits. `execution_verified` appears only when a proof supplied and trusted by the repository owner is executed and meets its declared expectation; ordinary scanner findings remain `pattern_match`, `manifest_verified`, or `registry_verified`.
+
 > PatchProof analyzes risky behavior, not whether a human or AI wrote it. Authorship detection is unreliable; security impact is what matters.
 
 ## What is actually verified?
@@ -80,15 +82,18 @@ Create `.patchproof/proofs.json`:
 
 Run `patchproof verify . --manifest .patchproof/proofs.json`. PatchProof writes `.patchproof/artifacts/proof-report.json` with the sandbox configuration, expectation, exit status, duration, sanitized output, and a SHA-256 transcript hash. A working command-injection demonstration lives in [`examples/proof-target`](examples/proof-target).
 
-To enable proofs in the GitHub Action, explicitly set the trusted manifest:
+To enable proofs in a pull-request GitHub Action, explicitly set the trusted manifest and pin its SHA-256:
 
 ```yaml
 - uses: rishabguptaa-lab/patchproof@v1
   with:
     proof_manifest: .patchproof/proofs.json
+    proof_manifest_sha256: 4519589b856c4b1cf7fb62fe6f4fea28c6905b36289a4be8d921cca1e42e2111
 ```
 
-Do not enable proof execution for untrusted fork pull requests without reviewing the proof manifest and GitHub token permissions.
+Calculate the pin with `sha256sum .patchproof/proofs.json` and update it only after reviewing manifest changes.
+
+The Action refuses fork-provided proofs. A matching output string alone cannot establish that a proof is honest, so proof logic remains a reviewed trust anchor. Read the full [malicious-manifest threat model](THREAT_MODEL.md) before enabling executable proofs.
 
 ## JavaScript and Python coverage
 
@@ -161,4 +166,4 @@ Run all local checks with `npm run check`.
 - Go and Java dependency adapters
 - GitHub App with inline comments and organization policy management
 
-Apache-2.0 · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+Apache-2.0 · [Threat model](THREAT_MODEL.md) · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)

@@ -5,12 +5,15 @@ import { createHash } from 'node:crypto';
 
 const IMAGES={node:'node:20-alpine',python:'python:3.12-alpine'};
 
-export async function runProofManifest(root, manifestPath='.patchproof/proofs.json'){
-  const manifest=JSON.parse(await fs.readFile(path.resolve(root,manifestPath),'utf8'));
+export async function runProofManifest(root, manifestPath='.patchproof/proofs.json', options={}){
+  const raw=await fs.readFile(path.resolve(root,manifestPath),'utf8');
+  const manifestSha256=createHash('sha256').update(raw).digest('hex');
+  if(options.expectedSha256&&manifestSha256!==options.expectedSha256)throw new Error(`Proof manifest integrity check failed. Expected ${options.expectedSha256}, received ${manifestSha256}.`);
+  const manifest=JSON.parse(raw);
   if(manifest.version!==1||!Array.isArray(manifest.proofs))throw new Error('Proof manifest must use version 1 and contain a proofs array.');
   await ensureDocker(); const results=[];
   for(const proof of manifest.proofs){validateProof(proof);results.push(await runOne(root,proof));}
-  const report={schema:'https://patchproof.dev/proof-report/v1',createdAt:new Date().toISOString(),sandbox:{runtime:'docker',network:'none',rootFilesystem:'read-only',capabilities:'dropped',privileges:'no-new-privileges'},summary:{total:results.length,verified:results.filter(x=>x.verification.level==='execution_verified').length,failed:results.filter(x=>x.verification.level!=='execution_verified').length},results};
+  const report={schema:'https://patchproof.dev/proof-report/v1',createdAt:new Date().toISOString(),manifest:{path:manifestPath,sha256:manifestSha256,trust:'author_supplied'},sandbox:{runtime:'docker',network:'none',rootFilesystem:'read-only',capabilities:'dropped',privileges:'no-new-privileges'},summary:{total:results.length,verified:results.filter(x=>x.verification.level==='execution_verified').length,failed:results.filter(x=>x.verification.level!=='execution_verified').length},results};
   const outputDir=path.join(root,'.patchproof','artifacts');await fs.mkdir(outputDir,{recursive:true});const output=path.join(outputDir,'proof-report.json');await fs.writeFile(output,JSON.stringify(report,null,2));return{report,output};
 }
 async function runOne(root,proof){

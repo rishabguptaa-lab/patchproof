@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {promises as fs} from 'node:fs';import os from 'node:os';import path from 'node:path';import {runProofManifest} from '../src/proofs.js';
+test('rejects a changed proof manifest before Docker execution',async()=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'patchproof-proof-'));await fs.writeFile(path.join(root,'proofs.json'),'{"version":1,"proofs":[]}');await assert.rejects(()=>runProofManifest(root,'proofs.json',{expectedSha256:'0'.repeat(64)}),/integrity check failed/);});
