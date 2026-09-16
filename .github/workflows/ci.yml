@@ -16,5 +16,7 @@ jobs:
           cache: npm
       - run: npm install --ignore-scripts
       - run: npm run check
+      - name: Verify executable-proof sandbox
+        run: npm run verify:demo
       - name: Self scan
         run: node bin/patchproof.js scan . --offline

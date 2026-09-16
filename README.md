@@ -1,14 +1,23 @@
 # PatchProof
 
-**The PR security gate that proves its findings.**
+**The AI-era PR security gate with explicit evidence levels.**
 
-PatchProof is an open-source, evidence-first security scanner built for code produced at machine speed. It verifies dependency truth, detects high-impact insecure patterns, identifies undeclared packages, emits GitHub-native SARIF, and blocks pull requests according to a repository-owned policy.
+PatchProof verifies npm and PyPI dependency truth, reconciles JavaScript and Python imports with project manifests, detects high-impact insecure patterns, emits GitHub-native SARIF, and can execute opt-in vulnerability proofs inside a locked-down container.
 
-> PatchProof scans risky code, not whether a human or AI wrote it. Authorship detection is unreliable; exploitable behavior is what matters.
+> PatchProof analyzes risky behavior, not whether a human or AI wrote it. Authorship detection is unreliable; security impact is what matters.
 
-## Why PatchProof
+## What is actually verified?
 
-AI coding tools can fabricate package names and APIs, repeat insecure snippets, remove guardrails, and generate convincing but incorrect fixes. Traditional linters report patterns. PatchProof reports a compact evidence record: location, observed construct, exploit rationale, confidence, remediation, and a stable fingerprint.
+Every finding declares exactly how far PatchProof verified it:
+
+| Level | Meaning |
+|---|---|
+| `pattern_match` | A deterministic security rule matched source code. No code was executed. |
+| `manifest_verified` | An import was reconciled against the repository's declared dependencies. |
+| `registry_verified` | The declared package was checked directly against npm or PyPI. |
+| `execution_verified` | A repository-supplied proof met its expected result inside the isolated proof runner. |
+
+PatchProof never labels a pattern match as executable proof.
 
 ## Quick start
 
@@ -16,7 +25,7 @@ AI coding tools can fabricate package names and APIs, repeat insecure snippets, 
 npx patchproof scan .
 ```
 
-No account, API key, build step, or source upload is required. Node.js 20+ is the only runtime dependency.
+Node.js 20+ is the only requirement for scanning. Source stays on the runner and no account or API key is required.
 
 ### GitHub Action
 
@@ -38,7 +47,69 @@ jobs:
           sarif_file: patchproof.sarif
 ```
 
-### Policy
+## Executable proof runner
+
+Executable verification is deliberately opt-in because running pull-request code is dangerous. Proofs require Docker and run with:
+
+- No network
+- Read-only repository mount and root filesystem
+- All Linux capabilities dropped
+- `no-new-privileges`
+- CPU, memory, process and timeout limits
+- A temporary 32 MB `/tmp`
+- No inherited secrets or environment variables
+
+Create `.patchproof/proofs.json`:
+
+```json
+{
+  "version": 1,
+  "proofs": [{
+    "id": "command-injection-regression",
+    "ruleId": "command-injection",
+    "runtime": "node",
+    "command": ["node", "security/proofs/command-injection.mjs"],
+    "timeoutMs": 10000,
+    "expect": {
+      "exitCode": 0,
+      "stdoutIncludes": "VULNERABILITY_REPRODUCED"
+    }
+  }]
+}
+```
+
+Run `patchproof verify . --manifest .patchproof/proofs.json`. PatchProof writes `.patchproof/artifacts/proof-report.json` with the sandbox configuration, expectation, exit status, duration, sanitized output, and a SHA-256 transcript hash. A working command-injection demonstration lives in [`examples/proof-target`](examples/proof-target).
+
+To enable proofs in the GitHub Action, explicitly set the trusted manifest:
+
+```yaml
+- uses: rishabguptaa-lab/patchproof@v1
+  with:
+    proof_manifest: .patchproof/proofs.json
+```
+
+Do not enable proof execution for untrusted fork pull requests without reviewing the proof manifest and GitHub token permissions.
+
+## JavaScript and Python coverage
+
+| Control | JavaScript/Node | Python |
+|---|:---:|:---:|
+| Registry existence | npm | PyPI |
+| Manifest reconciliation | `package.json` | `requirements.txt`, `pyproject.toml` |
+| Command injection | ✓ | ✓ |
+| SQL interpolation | ✓ | ✓ |
+| Unsafe deserialization | ✓ | Pickle/YAML |
+| Auth, TLS and CORS regressions | ✓ | Expanding |
+| Path traversal and redirects | ✓ | Expanding |
+| Debug/weak-crypto configuration | ✓ | ✓ |
+
+Common import-to-package differences such as `yaml` → `pyyaml`, `PIL` → `pillow`, and `cv2` → `opencv-python` are handled explicitly.
+
+## PatchProof and CodeQL
+
+CodeQL performs deep semantic analysis across supported languages. PatchProof focuses on AI-era failure modes: fabricated dependencies, imports missing from manifests, suspicious registry facts, explicit evidence classification, and isolated execution of repository-owned proofs. They are complementary; PatchProof exports SARIF into the same GitHub security workflow and this repository runs both.
+
+## Policy
 
 Run `npx patchproof init` and commit `.patchproof.yml`:
 
@@ -54,19 +125,6 @@ rules:
   permissive-cors: off
 ```
 
-## Detection coverage
-
-| Control | Evidence produced |
-|---|---|
-| Dependency truth | Registry existence and package age |
-| Import truth | Import not declared by the project manifest |
-| Secret exposure | Redacted source evidence and rotation guidance |
-| Command/SQL injection | Dangerous data-to-sink construct and exploit rationale |
-| Auth/TLS/CORS regression | Disabled boundary and resulting exposure |
-| Path traversal/open redirect | Request-controlled security-sensitive destination |
-| Unsafe evaluation/deserialization | Executable or object-instantiating input path |
-| Weak randomness/prototype pollution | Unsafe primitive and targeted replacement |
-
 ## Output formats
 
 ```bash
@@ -76,33 +134,31 @@ patchproof scan . --format sarif --output patchproof.sarif
 patchproof scan . --offline
 ```
 
-Exit code `0` means the policy passed, `1` means verified findings met the blocking threshold, and `2` means the scan could not complete.
+Exit code `0` means the policy/proofs passed, `1` means a policy or proof expectation failed, and `2` means execution could not complete safely.
+
+## Benchmark honesty
+
+`npm run benchmark` is a transparent **synthetic rule-regression corpus**. It protects detector behavior but is not presented as proof of real-world effectiveness. A separate real-AI-output benchmark requires human-labeled Copilot, Cursor and other coding-agent samples and will publish provenance, labels, false positives and per-rule recall when sufficient data exists.
+
+Run all local checks with `npm run check`.
 
 ## Trust model
 
-- Source stays on the runner.
-- Results are deterministic and fingerprinted.
+- Scanning never executes repository code.
+- Registry failure never blocks a pull request.
 - Secrets are redacted before reporting.
-- Network failure never blocks a pull request.
-- Registry lookups can be disabled with `--offline`.
-- Symlinks, generated folders, oversized files, and binary content are excluded.
-- PatchProof does not execute repository code during scanning.
-
-## Benchmark
-
-`npm run benchmark` evaluates more than 100 positive and negative rule cases. `npm run check` runs syntax validation, unit tests, the benchmark, and a self-scan. The corpus is intentionally transparent so contributors can challenge detection quality rather than trust an opaque score.
+- Network checks can be disabled with `--offline`.
+- Executable proofs require an explicit command and Docker sandbox.
+- A successful scan is not a guarantee that software is secure.
 
 ## Roadmap
 
-- Lockfile publisher and integrity verification
-- Installed-version export/API verification
-- Diff-aware dataflow and authorization boundary analysis
-- Isolated, opt-in exploit reproduction workers
-- Python, Go, and Java dependency truth adapters
-- GitHub App with inline review comments and organization policy management
-
-## Responsible use
-
-PatchProof is a defensive tool. Findings are decision support, not proof that a system is secure. Human review, tests, dependency controls, secret management, and runtime monitoring remain necessary.
+- Human-labeled AI-generated-code benchmark
+- Lockfile publisher, integrity and maintainer-change verification
+- Installed-version export/API truth verification
+- Diff-aware dataflow and authorization-boundary analysis
+- Python framework-specific authorization rules
+- Go and Java dependency adapters
+- GitHub App with inline comments and organization policy management
 
 Apache-2.0 · [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)

@@ -9,6 +9,10 @@ inputs:
     description: Disable registry verification
     required: false
     default: "false"
+  proof_manifest:
+    description: Optional path to a v1 proof manifest. Proofs run in a locked-down Docker container.
+    required: false
+    default: ""
 outputs:
   passed:
     description: Whether the configured security policy passed
@@ -16,6 +20,8 @@ outputs:
     description: Total number of findings
   sarif:
     description: Path to the SARIF report
+  proof_report:
+    description: Path to the executable-proof JSON artifact, when enabled
 runs:
   using: node20
   main: src/action.js

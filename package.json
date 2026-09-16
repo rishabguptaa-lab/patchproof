@@ -1,6 +1,6 @@
 {
   "name": "patchproof",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Evidence-first security gate for AI-era pull requests",
   "type": "module",
   "bin": { "patchproof": "./bin/patchproof.js" },
@@ -9,6 +9,7 @@
     "test": "node --test",
     "benchmark": "node benchmark/run.js",
     "demo": "node bin/patchproof.js scan examples/vulnerable --format terminal",
+    "verify:demo": "node bin/patchproof.js verify . --manifest .patchproof/proofs.json",
     "check": "node --check src/*.js && node --check bin/patchproof.js && npm test && npm run benchmark && node bin/patchproof.js scan . --offline"
   },
   "engines": { "node": ">=20" },

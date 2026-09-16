@@ -6,6 +6,7 @@ exclude:
   - build/**
   - coverage/**
   - examples/vulnerable/**
+  - examples/proof-target/**
   - benchmark/**
   - test/**
   - src/rules.js

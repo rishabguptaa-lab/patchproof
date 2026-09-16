@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "proofs": [
+    {
+      "id": "demo-command-injection",
+      "ruleId": "command-injection",
+      "description": "Demonstrates that a shell metacharacter reaches command execution in the vulnerable example.",
+      "runtime": "node",
+      "command": ["node", "examples/proof-target/command-injection.proof.mjs"],
+      "timeoutMs": 10000,
+      "expect": { "exitCode": 0, "stdoutIncludes": "PATCHPROOF_EXECUTION_PROOF" }
+    }
+  ]
+}
