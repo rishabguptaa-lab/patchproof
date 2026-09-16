@@ -18,7 +18,7 @@ if (command === 'init') {
   console.log(`Created ${destination}`); process.exit(0);
 }
 if (command === 'verify') {
-  try { const root=path.resolve(target); const manifest=valueAfter(args,'--manifest')||'.patchproof/proofs.json'; const {report,output}=await runProofManifest(root,manifest); console.log(`Executable proofs: ${report.summary.verified}/${report.summary.total} verified\nArtifact: ${output}`); process.exitCode=report.summary.failed?1:0; } catch(error){ console.error(`PatchProof verification failed safely: ${error.message}`); process.exitCode=2; }
+  try { const root=path.resolve(target); const manifest=valueAfter(args,'--manifest')||'.patchproof/proofs.json'; const {report,output}=await runProofManifest(root,manifest); console.log(`Executable proofs: ${report.summary.verified}/${report.summary.total} verified\nArtifact: ${output}`); for(const failed of report.results.filter(x=>x.verification.level!=='execution_verified')) console.error(`Proof ${failed.id} failed: exit=${failed.execution.exitCode} timeout=${failed.execution.timedOut}\nstdout: ${failed.execution.stdout||'(empty)'}\nstderr: ${failed.execution.stderr||'(empty)'}`); process.exitCode=report.summary.failed?1:0; } catch(error){ console.error(`PatchProof verification failed safely: ${error.message}`); process.exitCode=2; }
 } else if (command !== 'scan') { console.error(`Unknown command: ${command}`); process.exitCode=2; }
 if (command === 'scan') try {
   const format = valueAfter(args, '--format') || 'terminal';
